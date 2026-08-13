@@ -1,70 +1,59 @@
-# 🍳 AI Recipe Assistant
+AI Recipe Assistant
 
-A Retrieval-Augmented Generation (RAG) application that helps users find recipes using AI-powered semantic search. Users can ask natural language questions about recipes, ingredients, and dietary preferences.
+AI Recipe Assistant is a small RAG-based project that helps users find recipes using normal, natural-language questions.
 
-## What is RAG?
+For example, instead of searching for exact keywords, you can ask:
 
-Retrieval-Augmented Generation (RAG) combines:
-1. **Retrieval**: Finding relevant information from a database
-2. **Generation**: Using AI to create responses based on retrieved information
+“What can I make with chicken and rice?”
 
-Instead of relying solely on the AI model's training data, RAG fetches relevant context from a vector database and provides it to the LLM, resulting in more accurate and grounded responses.
+The application converts the question into an embedding, searches the recipe database for semantically similar recipes, and returns the most relevant result.
 
-## Architecture
-RECIPE JSON → Data Ingestion → Embedding Generation → Supabase pgvector
-↓
-USER QUERY → Query Embedding → Vector Similarity Search → Top-K Recipes
-↓
-Retrieved Context
-↓
-OpenAI LLM
-↓
-Structured Response
-↓
-Recipe UI
+What I Built
 
+The project uses Hugging Face's BAAI/bge-small-en-v1.5 model to create embeddings for the recipes and user queries.
 
-## Technologies Used
+These embeddings are 384-dimensional and are stored in Supabase PostgreSQL using pgvector.
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **AI**: OpenAI API (text-embedding-3-small, gpt-4o-mini)
-- **Vector Database**: Supabase with pgvector
-- **Validation**: Zod
+When a user asks something, the flow is:
 
-## How Embeddings Work
+User Query
+    ↓
+Hugging Face Embedding Model
+    ↓
+384-Dimensional Vector
+    ↓
+Supabase Vector Search
+    ↓
+Relevant Recipes
+    ↓
+Recipe Response
 
-Embeddings convert text into numerical vectors (arrays of numbers). Similar texts produce similar vectors. OpenAI's `text-embedding-3-small` model converts text into 1536-dimensional vectors.
+This allows the application to understand the meaning of a query instead of depending only on matching exact words.
 
-## How Vector Search Works
+Example
 
-Vector search finds similar items by calculating the distance between vectors. We use cosine similarity - the cosine of the angle between two vectors. Similar vectors have a small angle (high similarity), while different vectors have a large angle (low similarity).
+User:
 
-## Setup Instructions
+What can I make with chicken and rice?
 
-### 1. Prerequisites
+The system retrieves recipes such as:
 
-- Node.js 18+
-- OpenAI API key
-- Supabase account
+Chicken Fried Rice
+Egg Fried Rice with Vegetables
+Chicken Noodle Soup
 
-### 2. Supabase Setup
+The most relevant recipe is then used to create the response.
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Go to SQL Editor
-3. Run the contents of `supabase/schema.sql`
-4. Copy your Project URL and service_role key
+Tech Stack
+Next.js – application and API
+TypeScript – development
+Hugging Face – embedding generation
+BAAI/bge-small-en-v1.5 – embedding model
+Running the Project
 
-### 3. OpenAI Setup
+I built this project to get hands-on experience with RAG, embeddings, vector databases, and AI APIs rather than just learning these concepts theoretically.
 
-1. Get your API key from [platform.openai.com](https://platform.openai.com)
-2. Ensure you have billing credits
-
-### 4. Environment Variables
-
-Create `.env.local`:
-
-```bash
-OPENAI_API_KEY=your-key
-NEXT_PUBLIC_SUPABASE_URL=your-url
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+It helped me understand how a real AI application can take unstructured user questions, convert them into embeddings, retrieve relevant information from a custom dataset, and use that information to generate a useful response.
+Supabase – database
+PostgreSQL + pgvector – vector storage and similarity search
+Zod – validation
