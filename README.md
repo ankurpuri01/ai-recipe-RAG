@@ -40,29 +40,6 @@ Embeddings convert text into numerical vectors (arrays of numbers). Similar text
 
 Vector search finds similar items by calculating the distance between vectors. We use cosine similarity - the cosine of the angle between two vectors. Similar vectors have a small angle (high similarity), while different vectors have a large angle (low similarity).
 
-## Project Structure
-ai-recipe-assistant/
-├── app/
-│ ├── api/
-│ │ └── chat/
-│ │ └── route.ts # RAG API endpoint
-│ ├── layout.tsx # Root layout
-│ ├── page.tsx # Main UI
-│ └── globals.css # Global styles
-├── components/ # (Optional) Reusable components
-├── data/
-│ └── recipes.json # Sample recipe dataset
-├── lib/
-│ ├── openai.ts # OpenAI client and helpers
-│ └── supabase.ts # Supabase client and search
-├── scripts/
-│ └── ingest.ts # Data ingestion script
-├── supabase/
-│ └── schema.sql # Database schema
-├── .env.example # Environment variables template
-└── package.json
-
-
 ## Setup Instructions
 
 ### 1. Prerequisites
