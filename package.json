@@ -6,16 +6,24 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint",
+    "ingest": "tsx scripts/ingest.ts"
   },
   "dependencies": {
+    "@huggingface/inference": "^4.13.26",
+    "@supabase/supabase-js": "^2.112.3",
+    "@xenova/transformers": "^2.17.2",
+    "dotenv": "^17.4.2",
     "next": "16.3.0",
+    "openai": "^7.4.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "tsx": "^4.23.12",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.43",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

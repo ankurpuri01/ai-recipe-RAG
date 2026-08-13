@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍳 AI Recipe Assistant
 
-## Getting Started
+A Retrieval-Augmented Generation (RAG) application that helps users find recipes using AI-powered semantic search. Users can ask natural language questions about recipes, ingredients, and dietary preferences.
 
-First, run the development server:
+## What is RAG?
+
+Retrieval-Augmented Generation (RAG) combines:
+1. **Retrieval**: Finding relevant information from a database
+2. **Generation**: Using AI to create responses based on retrieved information
+
+Instead of relying solely on the AI model's training data, RAG fetches relevant context from a vector database and provides it to the LLM, resulting in more accurate and grounded responses.
+
+## Architecture
+RECIPE JSON → Data Ingestion → Embedding Generation → Supabase pgvector
+↓
+USER QUERY → Query Embedding → Vector Similarity Search → Top-K Recipes
+↓
+Retrieved Context
+↓
+OpenAI LLM
+↓
+Structured Response
+↓
+Recipe UI
+
+
+## Technologies Used
+
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **AI**: OpenAI API (text-embedding-3-small, gpt-4o-mini)
+- **Vector Database**: Supabase with pgvector
+- **Validation**: Zod
+
+## How Embeddings Work
+
+Embeddings convert text into numerical vectors (arrays of numbers). Similar texts produce similar vectors. OpenAI's `text-embedding-3-small` model converts text into 1536-dimensional vectors.
+
+## How Vector Search Works
+
+Vector search finds similar items by calculating the distance between vectors. We use cosine similarity - the cosine of the angle between two vectors. Similar vectors have a small angle (high similarity), while different vectors have a large angle (low similarity).
+
+## Project Structure
+ai-recipe-assistant/
+├── app/
+│ ├── api/
+│ │ └── chat/
+│ │ └── route.ts # RAG API endpoint
+│ ├── layout.tsx # Root layout
+│ ├── page.tsx # Main UI
+│ └── globals.css # Global styles
+├── components/ # (Optional) Reusable components
+├── data/
+│ └── recipes.json # Sample recipe dataset
+├── lib/
+│ ├── openai.ts # OpenAI client and helpers
+│ └── supabase.ts # Supabase client and search
+├── scripts/
+│ └── ingest.ts # Data ingestion script
+├── supabase/
+│ └── schema.sql # Database schema
+├── .env.example # Environment variables template
+└── package.json
+
+
+## Setup Instructions
+
+### 1. Prerequisites
+
+- Node.js 18+
+- OpenAI API key
+- Supabase account
+
+### 2. Supabase Setup
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. Go to SQL Editor
+3. Run the contents of `supabase/schema.sql`
+4. Copy your Project URL and service_role key
+
+### 3. OpenAI Setup
+
+1. Get your API key from [platform.openai.com](https://platform.openai.com)
+2. Ensure you have billing credits
+
+### 4. Environment Variables
+
+Create `.env.local`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+OPENAI_API_KEY=your-key
+NEXT_PUBLIC_SUPABASE_URL=your-url
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
