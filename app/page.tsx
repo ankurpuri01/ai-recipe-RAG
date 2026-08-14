@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 
 interface Ingredient {
   name: string;
@@ -29,10 +29,22 @@ interface ChatResponse {
 }
 
 const EXAMPLE_PROMPTS = [
-  'What can I make with chicken and rice?',
-  'Give me a vegetarian pasta recipe.',
-  'I have eggs, tomato and onion.',
-  'Show me something under 30 minutes.',
+  {
+    icon: '🍗',
+    text: 'I have chicken and rice',
+  },
+  {
+    icon: '🥚',
+    text: 'I have eggs, tomato and onion',
+  },
+  {
+    icon: '🥬',
+    text: 'Give me a vegetarian dinner',
+  },
+  {
+    icon: '⚡',
+    text: 'Show me something under 30 minutes',
+  },
 ];
 
 export default function Home() {
@@ -41,17 +53,23 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<ChatResponse | null>(null);
   const [showContext, setShowContext] = useState(false);
-  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(
+    new Set()
+  );
 
   const handleSubmit = async (prompt?: string) => {
-    const finalQuery = prompt || query;
-    if (!finalQuery.trim()) return;
+    const finalQuery = (prompt ?? query).trim();
 
+    if (!finalQuery || loading) {
+      return;
+    }
+
+    setQuery(finalQuery);
     setLoading(true);
     setError(null);
     setResponse(null);
-    setCheckedIngredients(new Set());
     setShowContext(false);
+    setCheckedIngredients(new Set());
 
     try {
       const res = await fetch('/api/chat', {
@@ -59,208 +77,528 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: finalQuery }),
+        body: JSON.stringify({
+          query: finalQuery,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to get response');
+        throw new Error(
+          data?.error || 'Something went wrong while finding your recipe.'
+        );
       }
 
       setResponse(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Something went wrong. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    handleSubmit();
+  };
+
   const toggleIngredient = (index: number) => {
-    const newChecked = new Set(checkedIngredients);
-    if (newChecked.has(index)) {
-      newChecked.delete(index);
+    const updated = new Set(checkedIngredients);
+
+    if (updated.has(index)) {
+      updated.delete(index);
     } else {
-      newChecked.add(index);
+      updated.add(index);
     }
-    setCheckedIngredients(newChecked);
+
+    setCheckedIngredients(updated);
+  };
+
+  const startOver = () => {
+    setQuery('');
+    setResponse(null);
+    setError(null);
+    setShowContext(false);
+    setCheckedIngredients(new Set());
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
-      <div className="max-w-4xl mx-auto px-4 py-12">
+    <main className="min-h-screen bg-[#fffaf5] text-gray-900">
+      {/* Decorative background */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-orange-200/30 blur-3xl" />
+        <div className="absolute -right-32 top-40 h-96 w-96 rounded-full bg-amber-200/20 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-red-100/20 blur-3xl" />
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4">🍳 AI Recipe Assistant</h1>
-          <p className="text-xl text-gray-600">
-            Find recipes using AI-powered semantic search.
-          </p>
-        </div>
+        <header className="flex items-center justify-between py-3">
+          <button
+            onClick={startOver}
+            className="flex items-center gap-3"
+            aria-label="Start over"
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500 text-2xl shadow-lg shadow-orange-200">
+              🍳
+            </div>
 
-        {/* Search Input */}
-        <div className="mb-8">
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-              placeholder="Ask for a recipe... (e.g., What can I make with chicken?)"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-lg"
-              disabled={loading}
-            />
+            <div className="text-left">
+              <p className="text-lg font-bold tracking-tight text-gray-900">
+                RecipeMate
+              </p>
+              <p className="text-xs text-gray-500">
+                Your smart kitchen companion
+              </p>
+            </div>
+          </button>
+
+          {response && (
             <button
-              onClick={() => handleSubmit()}
-              disabled={loading || !query.trim()}
-              className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-semibold"
+              onClick={startOver}
+              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:border-orange-300 hover:text-orange-600"
             >
-              {loading ? 'Searching...' : 'Send'}
+              New search
             </button>
-          </div>
-        </div>
+          )}
+        </header>
 
-        {/* Example Prompts */}
-        <div className="mb-8">
-          <p className="text-sm text-gray-500 mb-3">Try these examples:</p>
-          <div className="flex flex-wrap gap-2">
-            {EXAMPLE_PROMPTS.map((prompt) => (
-              <button
-                key={prompt}
-                onClick={() => {
-                  setQuery(prompt);
-                  handleSubmit(prompt);
-                }}
-                disabled={loading}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-full hover:bg-orange-50 hover:border-orange-300 transition-colors text-sm disabled:opacity-50"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-        </div>
+        {!response && !loading && (
+          <>
+            {/* Hero */}
+            <section className="mx-auto max-w-4xl pb-10 pt-16 text-center sm:pt-24">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/80 px-4 py-2 text-sm font-medium text-orange-700 shadow-sm">
+                <span>✨</span>
+                <span>AI-powered recipe discovery</span>
+              </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700">❌ {error}</p>
-          </div>
+              <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+                What are you{' '}
+                <span className="text-orange-500">cooking today?</span>
+              </h1>
+
+              <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-gray-600 sm:text-lg">
+                Tell me what ingredients you have, what you&apos;re craving,
+                or how much time you have. I&apos;ll find a recipe that fits.
+              </p>
+
+              {/* Search */}
+              <form onSubmit={handleFormSubmit} className="mx-auto mt-10 max-w-3xl">
+                <div className="rounded-3xl border border-gray-200 bg-white p-2 shadow-xl shadow-orange-100/50 transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100">
+                  <div className="flex items-center gap-2">
+                    <span className="hidden pl-3 text-xl sm:block">🔎</span>
+
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Try “I have chicken, rice and vegetables...”"
+                      disabled={loading}
+                      className="min-w-0 flex-1 bg-transparent px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 sm:text-lg"
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={loading || !query.trim()}
+                      className="rounded-2xl bg-orange-500 px-5 py-3 font-semibold text-white shadow-md shadow-orange-200 transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none sm:px-7"
+                    >
+                      Find recipe
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              {/* Examples */}
+              <div className="mt-8">
+                <p className="mb-4 text-sm font-medium text-gray-500">
+                  Not sure what to ask? Try one of these
+                </p>
+
+                <div className="flex flex-wrap justify-center gap-3">
+                  {EXAMPLE_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt.text}
+                      onClick={() => handleSubmit(prompt.text)}
+                      className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700"
+                    >
+                      <span>{prompt.icon}</span>
+                      <span>{prompt.text}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Feature cards */}
+            <section className="mx-auto grid max-w-4xl gap-4 pb-12 sm:grid-cols-3">
+              <div className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
+                <div className="mb-3 text-2xl">🥕</div>
+                <h3 className="font-semibold text-gray-900">
+                  Use what you have
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-gray-500">
+                  Tell me your ingredients and discover meals without another
+                  grocery trip.
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
+                <div className="mb-3 text-2xl">⚡</div>
+                <h3 className="font-semibold text-gray-900">
+                  Match your time
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-gray-500">
+                  Looking for something quick? Ask for recipes under 15, 30 or
+                  45 minutes.
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
+                <div className="mb-3 text-2xl">🌱</div>
+                <h3 className="font-semibold text-gray-900">
+                  Find your style
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-gray-500">
+                  Ask for vegetarian, vegan, spicy, healthy or comfort-food
+                  options.
+                </p>
+              </div>
+            </section>
+          </>
         )}
 
-        {/* Loading State */}
+        {/* Loading */}
         {loading && (
-          <div className="text-center py-12">
-            <div className="animate-spin inline-block w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full"></div>
-            <p className="mt-4 text-gray-600">Finding the perfect recipe...</p>
-          </div>
+          <section className="mx-auto max-w-2xl py-24 text-center">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-100 text-4xl">
+              🍳
+            </div>
+
+            <h2 className="text-2xl font-bold text-gray-900">
+              Finding something delicious...
+            </h2>
+
+            <p className="mt-3 text-gray-500">
+              Searching your recipe collection and finding the best match.
+            </p>
+
+            <div className="mx-auto mt-8 flex max-w-xs items-center gap-2">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-orange-100">
+                <div className="h-full w-1/2 animate-pulse rounded-full bg-orange-500" />
+              </div>
+            </div>
+          </section>
         )}
 
-        {/* Response */}
-        {response && !loading && (
-          <div className="space-y-6">
-            {/* Recipe Card */}
-            <div className="bg-white shadow-lg rounded-xl p-8">
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">
-                {response.answer.recipe_name}
+        {/* Error */}
+        {error && !loading && (
+          <section className="mx-auto max-w-2xl py-16">
+            <div className="rounded-3xl border border-red-200 bg-white p-8 text-center shadow-lg">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-3xl">
+                😕
+              </div>
+
+              <h2 className="text-xl font-bold text-gray-900">
+                I couldn&apos;t find a recipe
               </h2>
-              <p className="text-gray-600 mb-6">{response.answer.description}</p>
 
-              <div className="flex gap-4 mb-6">
-                <div className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg">
-                  ⏱️ {response.answer.cooking_time_minutes} minutes
+              <p className="mt-2 text-gray-500">{error}</p>
+
+              <button
+                onClick={() => handleSubmit()}
+                className="mt-6 rounded-xl bg-orange-500 px-5 py-3 font-semibold text-white transition hover:bg-orange-600"
+              >
+                Try again
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Recipe */}
+        {response && !loading && (
+          <section className="mx-auto max-w-5xl pb-16 pt-10">
+            {/* Search summary */}
+            <div className="mb-8">
+              <p className="text-sm font-medium text-orange-600">
+                Here&apos;s what I found
+              </p>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Based on: <span className="font-medium text-gray-700">{query}</span>
+              </p>
+            </div>
+
+            {/* Main recipe card */}
+            <article className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-xl shadow-orange-100/40">
+              {/* Recipe header */}
+              <div className="bg-gradient-to-br from-orange-500 via-orange-500 to-amber-500 px-6 py-10 text-white sm:px-10">
+                <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="max-w-3xl">
+                    <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 text-sm backdrop-blur">
+                      <span>🍽️</span>
+                      <span>Recipe recommendation</span>
+                    </div>
+
+                    <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">
+                      {response.answer.recipe_name}
+                    </h1>
+
+                    <p className="mt-4 max-w-2xl text-base leading-7 text-orange-50 sm:text-lg">
+                      {response.answer.description}
+                    </p>
+                  </div>
+
+                  <div className="text-6xl">👨‍🍳</div>
                 </div>
-                <div className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg">
-                  📊 {response.answer.difficulty}
+
+                {/* Recipe stats */}
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <div className="rounded-2xl bg-white/15 px-4 py-3 backdrop-blur">
+                    <p className="text-xs text-orange-100">TIME</p>
+                    <p className="mt-1 font-semibold">
+                      ⏱️ {response.answer.cooking_time_minutes} min
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white/15 px-4 py-3 backdrop-blur">
+                    <p className="text-xs text-orange-100">DIFFICULTY</p>
+                    <p className="mt-1 font-semibold capitalize">
+                      👨‍🍳 {response.answer.difficulty}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white/15 px-4 py-3 backdrop-blur">
+                    <p className="text-xs text-orange-100">INGREDIENTS</p>
+                    <p className="mt-1 font-semibold">
+                      🥕 {response.answer.ingredients.length} items
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Ingredients */}
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold mb-4 text-gray-800">
-                  Ingredients
-                </h3>
-                <ul className="space-y-2">
-                  {response.answer.ingredients.map((ingredient, index) => (
-                    <li key={index} className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={checkedIngredients.has(index)}
-                        onChange={() => toggleIngredient(index)}
-                        className="w-5 h-5 text-orange-500 rounded focus:ring-orange-500"
-                      />
-                      <span className={checkedIngredients.has(index) ? 'line-through text-gray-400' : 'text-gray-700'}>
-                        <span className="font-medium">{ingredient.name}</span>
-                        {ingredient.quantity && (
-                          <span className="text-gray-500"> - {ingredient.quantity}</span>
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+              {/* Recipe content */}
+              <div className="grid gap-10 p-6 sm:p-10 lg:grid-cols-[0.85fr_1.15fr]">
+                {/* Ingredients */}
+                <div>
+                  <div className="mb-6">
+                    <p className="text-sm font-semibold uppercase tracking-wider text-orange-500">
+                      What you need
+                    </p>
+
+                    <h2 className="mt-1 text-2xl font-bold text-gray-900">
+                      Ingredients
+                    </h2>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-100 bg-[#fffaf5] p-4">
+                    <ul className="space-y-1">
+                      {response.answer.ingredients.map(
+                        (ingredient, index) => {
+                          const checked = checkedIngredients.has(index);
+
+                          return (
+                            <li
+                              key={`${ingredient.name}-${index}`}
+                              className={`rounded-xl transition ${
+                                checked ? 'bg-gray-100' : 'hover:bg-white'
+                              }`}
+                            >
+                              <label className="flex cursor-pointer items-center gap-3 p-3">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleIngredient(index)}
+                                  className="h-5 w-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                                />
+
+                                <span
+                                  className={`flex-1 text-sm sm:text-base ${
+                                    checked
+                                      ? 'text-gray-400 line-through'
+                                      : 'text-gray-700'
+                                  }`}
+                                >
+                                  <span className="font-medium">
+                                    {ingredient.name}
+                                  </span>
+
+                                  {ingredient.quantity && (
+                                    <span className="ml-2 text-gray-500">
+                                      {ingredient.quantity}
+                                    </span>
+                                  )}
+                                </span>
+
+                                {checked && (
+                                  <span className="text-sm text-green-600">
+                                    ✓
+                                  </span>
+                                )}
+                              </label>
+                            </li>
+                          );
+                        }
+                      )}
+                    </ul>
+                  </div>
+
+                  <p className="mt-3 text-xs text-gray-400">
+                    Check ingredients as you prepare them.
+                  </p>
+                </div>
+
+                {/* Instructions */}
+                <div>
+                  <div className="mb-6">
+                    <p className="text-sm font-semibold uppercase tracking-wider text-orange-500">
+                      Let&apos;s cook
+                    </p>
+
+                    <h2 className="mt-1 text-2xl font-bold text-gray-900">
+                      Instructions
+                    </h2>
+                  </div>
+
+                  <ol className="space-y-5">
+                    {response.answer.steps.map((step, index) => (
+                      <li key={`${step}-${index}`} className="flex gap-4">
+                        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 font-bold text-orange-600">
+                          {index + 1}
+                        </div>
+
+                        <div className="flex-1 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                          <p className="text-sm leading-7 text-gray-700 sm:text-base">
+                            {step}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+            </article>
+
+            {/* Follow-up suggestions */}
+            <div className="mt-8 rounded-3xl border border-orange-100 bg-orange-50/60 p-6 sm:p-8">
+              <div className="text-center">
+                <p className="text-sm font-semibold text-orange-600">
+                  WANT TO CHANGE IT?
+                </p>
+
+                <h2 className="mt-1 text-xl font-bold text-gray-900">
+                  Make it your way
+                </h2>
+
+                <p className="mt-2 text-sm text-gray-500">
+                  Ask me for another version of this recipe.
+                </p>
               </div>
 
-              {/* Instructions */}
-              <div>
-                <h3 className="text-xl font-semibold mb-4 text-gray-800">
-                  Instructions
-                </h3>
-                <ol className="space-y-3">
-                  {response.answer.steps.map((step, index) => (
-                    <li key={index} className="flex gap-3">
-                      <span className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-semibold">
-                        {index + 1}
-                      </span>
-                      <span className="text-gray-700 pt-1">{step}</span>
-                    </li>
-                  ))}
-                </ol>
+              <div className="mt-5 flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={() =>
+                    handleSubmit(`Give me another recipe similar to ${response.answer.recipe_name}`)
+                  }
+                  className="rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600"
+                >
+                  🔄 Another recipe
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleSubmit(`Make ${response.answer.recipe_name} vegetarian`)
+                  }
+                  className="rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600"
+                >
+                  🌱 Vegetarian
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleSubmit(`Make ${response.answer.recipe_name} spicy`)
+                  }
+                  className="rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600"
+                >
+                  🌶️ Make it spicy
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleSubmit(`Give me a faster version of ${response.answer.recipe_name}`)
+                  }
+                  className="rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600"
+                >
+                  ⚡ Make it faster
+                </button>
               </div>
             </div>
 
-            {/* Retrieved Context */}
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+            {/* Retrieved context */}
+            <div className="mt-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
               <button
                 onClick={() => setShowContext(!showContext)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="flex w-full items-center justify-between px-6 py-5 text-left transition hover:bg-gray-50 sm:px-8"
               >
-                <span className="font-semibold text-gray-800">
-                  🔍 Retrieved Context
-                </span>
-                <span className="text-gray-500">{showContext ? '▼' : '▶'}</span>
-              </button>
-              
-              {showContext && (
-                <div className="px-6 py-4 border-t border-gray-200">
-                  <p className="text-sm text-gray-500 mb-4">
-                    These recipes were retrieved from the vector database and used to generate the answer:
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    🔎 How this recipe was found
                   </p>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Retrieved from your recipe vector database
+                  </p>
+                </div>
+
+                <span className="text-gray-400">
+                  {showContext ? '▲' : '▼'}
+                </span>
+              </button>
+
+              {showContext && (
+                <div className="border-t border-gray-100 px-6 py-6 sm:px-8">
                   <div className="space-y-3">
                     {response.retrieved_context.map((context, index) => (
                       <div
-                        key={index}
-                        className="p-4 bg-gray-50 rounded-lg flex items-center justify-between"
+                        key={`${context.recipe_id}-${index}`}
+                        className="flex flex-col gap-3 rounded-2xl bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div>
                           <p className="font-medium text-gray-800">
                             {context.recipe_name}
                           </p>
-                          <p className="text-sm text-gray-500">
-                            ID: {context.recipe_id}
+
+                          <p className="mt-1 text-xs text-gray-400">
+                            {context.recipe_id}
                           </p>
                         </div>
-                        <div className="text-sm">
-                          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">
-                            {(context.similarity * 100).toFixed(1)}% match
-                          </span>
-                        </div>
+
+                        <span className="w-fit rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
+                          {(context.similarity * 100).toFixed(1)}% match
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
             </div>
-          </div>
+
+            {/* Bottom action */}
+            <div className="mt-8 text-center">
+              <button
+                onClick={startOver}
+                className="rounded-2xl bg-gray-900 px-6 py-3 font-semibold text-white transition hover:bg-gray-800"
+              >
+                🍳 Find another recipe
+              </button>
+            </div>
+          </section>
         )}
       </div>
-    </div>
+    </main>
   );
 }
