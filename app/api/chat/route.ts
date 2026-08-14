@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const { query } = ChatRequestSchema.parse(body);
 
     const queryEmbedding = await generateEmbedding(query);
-    const similarRecipes = await searchRecipesByEmbedding(queryEmbedding, 5, 0.1, query);
+    const similarRecipes = await searchRecipesByEmbedding(queryEmbedding, 5, 0.1);
 
     if (!similarRecipes.length) {
       return NextResponse.json(
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     const context = similarRecipes
-      .map((recipe, index) => {
+      .map((recipe: any, index: number) => {
         return `[RECIPE ${index + 1}]
 Recipe ID: ${recipe.recipe_id}
 Name: ${recipe.recipe_name}
@@ -83,7 +83,7 @@ Similarity Score: ${recipe.similarity.toFixed(3)}`;
 
     return NextResponse.json({
       answer: validatedResponse,
-      retrieved_context: similarRecipes.map((recipe) => ({
+      retrieved_context: similarRecipes.map((recipe: any) => ({
         recipe_id: recipe.recipe_id,
         recipe_name: recipe.recipe_name,
         similarity: recipe.similarity,
